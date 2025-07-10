@@ -1,0 +1,1 @@
+// src/phaser/scenes/VillagegScene.ts
