@@ -1,18 +1,47 @@
-import React, { useEffect } from 'react'
-import '../phaser/main' // import to start Phaser game
+// src/react/App.tsx
+
+import React, { useEffect, useRef } from 'react'
+import { initGame } from '../phaser/main'
 
 const App = () => {
+  const gameRef = useRef<Phaser.Game | null>(null)
+
   useEffect(() => {
-    // Game will mount on first render
+    // Initialize game after component mounts
+    if (!gameRef.current) {
+      gameRef.current = initGame()
+    }
+
+    // Cleanup on unmount
+    return () => {
+      if (gameRef.current) {
+        gameRef.current.destroy(true)
+        gameRef.current = null
+      }
+    }
   }, [])
 
   return (
-    <div style={{ display: 'flex' }}>
-      <div id="game-container" style={{ width: '800px', height: '600px' }} />
-      <div style={{ marginLeft: '20px' }}>
-        <h2>Penguin Fishing Game</h2>
-        {/* Insert React UI here later */}
-      </div>
+    <div
+      style={{
+        width: '100vw',
+        height: '100vh',
+        margin: 0,
+        padding: 0,
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#000'
+      }}
+    >
+      <div
+        id="game-container"
+        style={{
+          width: '800px',
+          height: '600px',
+          border: '2px solid #333'
+        }}
+      />
     </div>
   )
 }
