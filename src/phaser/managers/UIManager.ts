@@ -21,7 +21,7 @@ export class UIManager {
                 backgroundColor: 'rgba(255, 255, 255, 0.8)',
                 padding: { x: 10, y: 5 }
             }
-        ).setOrigin(0.5).setScrollFactor(0)
+        ).setOrigin(0.5).setScrollFactor(0).setDepth(100)
 
         this.depthText = this.scene.add.text(50, 50,
             'Depth: 0m',
@@ -31,14 +31,14 @@ export class UIManager {
                 backgroundColor: 'rgba(255, 255, 255, 0.8)',
                 padding: { x: 10, y: 5 }
             }
-        ).setScrollFactor(0)
+        ).setScrollFactor(0).setDepth(100)
 
         const backButton = this.scene.add.text(600, 50, 'Back to Village', {
             fontSize: '16px',
             color: '#ffffff',
             backgroundColor: 'rgba(0, 0, 0, 0.7)',
             padding: { x: 10, y: 5 }
-        }).setInteractive().setScrollFactor(0)
+        }).setInteractive().setScrollFactor(0).setDepth(100)
 
         backButton.on('pointerdown', () => {
             this.scene.scene.start('VillageScene')

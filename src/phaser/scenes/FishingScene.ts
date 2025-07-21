@@ -7,12 +7,15 @@ import { HookManager } from '../managers/HookManager'
 import { UIManager } from '../managers/UIManager'
 import { AreaSettings } from '../config/AreaSettings'
 import { GAME_CONSTANTS } from '../config/GameConstants'
+import { FishManager } from '../managers/FishManager'
+import { FishAreaSettings } from '../config/FishSettings'
 
 export default class FishingScene extends Phaser.Scene {
   private rockManager!: RockManager
   private waterManager!: WaterManager
   private hookManager!: HookManager
   private uiManager!: UIManager
+  private fishManager!: FishManager
 
   constructor() {
     super('FishingScene')
@@ -43,6 +46,7 @@ export default class FishingScene extends Phaser.Scene {
     this.waterManager = new WaterManager(this, settings)
     this.rockManager = new RockManager(this, settings)
     this.hookManager = new HookManager(this)
+    this.fishManager = new FishManager(this, FishAreaSettings.SHALLOW_WATERS)
     this.uiManager = new UIManager(this)
   }
 
@@ -53,12 +57,19 @@ export default class FishingScene extends Phaser.Scene {
 
   private generateInitialRocks(): void {
     this.rockManager.generateRocks(GAME_CONSTANTS.WATER_LEVEL, GAME_CONSTANTS.WATER_LEVEL + 1200)
+    this.fishManager.generateFish(GAME_CONSTANTS.WATER_LEVEL, GAME_CONSTANTS.WATER_LEVEL + 1200)
   }
 
   update(): void {
     this.hookManager.update()
     this.uiManager.updateDepth(this.hookManager.getDepth())
     this.uiManager.updateInstructions(this.hookManager.getState())
+    this.fishManager.update(this.cameras.main.scrollY)
+
+    if (this.fishManager.checkGenerationNeeded(this.cameras.main.scrollY + this.cameras.main.height)) {
+      const currentDepth = this.fishManager.getGeneratedDepth()
+      this.fishManager.generateFish(currentDepth, currentDepth + 1200)
+    }
 
     if (this.rockManager.checkGenerationNeeded(this.cameras.main)) {
       const currentDepth = this.rockManager.getGeneratedDepth()
@@ -78,5 +89,6 @@ export default class FishingScene extends Phaser.Scene {
     this.waterManager?.destroy()
     this.hookManager?.destroy()
     this.uiManager?.destroy()
+    this.fishManager?.destroy()
   }
 }
