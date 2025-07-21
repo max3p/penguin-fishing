@@ -4,39 +4,122 @@ import type { FishGenerationSettings } from '../types/FishTypes'
 
 export const DEFAULT_FISH_SETTINGS: FishGenerationSettings = {
     density: 2, // 2 fish per 100 pixels of depth
-    minSize: 30,
-    maxSize: 50,
-    minSpeed: 20,
-    maxSpeed: 80,
     spawnPadding: 100,
-    despawnDistance: 200
+    spawnRules: [] // No default spawn rules
 }
 
 export const FishAreaSettings = {
     SHALLOW_WATERS: {
-        density: 2,
-        minSize: 30,
-        maxSize: 50,
-        minSpeed: 15,
-        maxSpeed: 60,
-        despawnDistance: 200
+        density: 1,
+        spawnRules: [
+            {
+                speciesId: 'atlantic_cod',
+                minDepth: 0,
+                maxDepth: 200,
+                spawnChance: 0.4
+            },
+            {
+                speciesId: 'haddock',
+                minDepth: 100,
+                maxDepth: 500,
+                spawnChance: 0.3
+            },
+            {
+                speciesId: 'whiting',
+                minDepth: 50,
+                maxDepth: 300,
+                spawnChance: 0.5
+            },
+            {
+                speciesId: 'herring',
+                minDepth: 0,
+                maxDepth: 150,
+                spawnChance: 0.6
+            },
+            {
+                speciesId: 'mackerel',
+                minDepth: 20,
+                maxDepth: 250,
+                spawnChance: 0.3
+            },
+            {
+                speciesId: 'flounder',
+                minDepth: 80,
+                maxDepth: 400,
+                spawnChance: 0.2
+            }
+        ]
     } as FishGenerationSettings,
 
     DEEP_CAVERNS: {
-        density: 1.5,
-        minSize: 30,
-        maxSize: 50,
-        minSpeed: 10,
-        maxSpeed: 40,
-        despawnDistance: 250
+        density: 1,
+        spawnRules: [
+            {
+                speciesId: 'pollock',
+                minDepth: 300,
+                maxDepth: 800,
+                spawnChance: 0.4
+            },
+            {
+                speciesId: 'haddock',
+                minDepth: 200,
+                maxDepth: 700,
+                spawnChance: 0.3
+            },
+            {
+                speciesId: 'sole',
+                minDepth: 400,
+                maxDepth: 900,
+                spawnChance: 0.15
+            },
+            {
+                speciesId: 'bass',
+                minDepth: 350,
+                maxDepth: 800,
+                spawnChance: 0.1
+            },
+            {
+                speciesId: 'flounder',
+                minDepth: 250,
+                maxDepth: 750,
+                spawnChance: 0.25
+            }
+        ]
     } as FishGenerationSettings,
 
     NARROW_CANYON: {
-        density: 2.5,
-        minSize: 30,
-        maxSize: 50,
-        minSpeed: 25,
-        maxSpeed: 100,
-        despawnDistance: 180
+        density: 1,
+        spawnRules: [
+            {
+                speciesId: 'bass',
+                minDepth: 600,
+                maxDepth: 1200,
+                spawnChance: 0.2
+            },
+            {
+                speciesId: 'tuna',
+                minDepth: 800,
+                maxDepth: 1500,
+                spawnChance: 0.05
+            },
+            {
+                speciesId: 'pollock',
+                minDepth: 500,
+                maxDepth: 1000,
+                spawnChance: 0.3
+            },
+            {
+                speciesId: 'sole',
+                minDepth: 700,
+                maxDepth: 1300,
+                spawnChance: 0.1
+            },
+            {
+                speciesId: 'mackerel',
+                minDepth: 600,
+                maxDepth: 1100,
+                spawnChance: 0.25
+            }
+        ]
     } as FishGenerationSettings
 }

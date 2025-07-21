@@ -15,13 +15,13 @@ export class Fish {
         this.data = fishData
         this.baseY = fishData.y
 
-        // Create fish sprite (grey rectangle for now)
+        // Create fish sprite with species-specific color
         this.sprite = scene.add.rectangle(
             fishData.x,
             fishData.y,
             fishData.width,
             fishData.height,
-            0x808080
+            fishData.species.color
         )
         this.sprite.setOrigin(0.5)
     }
@@ -49,14 +49,6 @@ export class Fish {
         }
     }
 
-    // Check if fish should be despawned (too far from camera)
-    shouldDespawn(cameraY: number, despawnDistance: number): boolean {
-        const cameraTop = cameraY - despawnDistance
-        const cameraBottom = cameraY + 600 + despawnDistance
-
-        return this.data.y < cameraTop || this.data.y > cameraBottom
-    }
-
     // Get collision bounds for future fish catching
     getBounds(): Phaser.Geom.Rectangle {
         return this.sprite.getBounds()
@@ -70,6 +62,21 @@ export class Fish {
     // Get sprite for advanced operations
     getSprite(): Phaser.GameObjects.Rectangle {
         return this.sprite
+    }
+
+    // Get fish species information
+    getSpecies() {
+        return this.data.species
+    }
+
+    // Get fish display info (for UI when caught)
+    getDisplayInfo() {
+        return {
+            name: this.data.species.name,
+            weight: this.data.actualWeight,
+            value: this.data.actualValue,
+            size: this.data.width
+        }
     }
 
     // Destroy the fish
