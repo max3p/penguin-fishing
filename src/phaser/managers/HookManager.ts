@@ -1,4 +1,5 @@
 // src/phaser/managers/HookManager.ts
+
 import Phaser from 'phaser'
 import type { HookState } from '../types/GameTypes'
 import { GAME_CONSTANTS } from '../config/GameConstants'
@@ -10,6 +11,15 @@ export class HookManager {
     private boat!: Phaser.GameObjects.Rectangle
     private state: HookState = 'ready'
     private mousePointer: Phaser.Input.Pointer
+
+    private hookVelocityX = 0
+    private hookVelocityY = 0
+    private readonly RUBBER_BAND_STRENGTH = 10  // How strong the pull towards mouse is
+    private readonly DAMPING = 0.85  // Reduces velocity over time (0-1, higher = less damping)
+    private readonly MAX_VELOCITY_X = 2000  // Max horizontal speed
+    private readonly MAX_VELOCITY_Y = 1500  // Max vertical speed (for upward movement)
+    private readonly GRAVITY = 1200  // Constant downward force
+    private readonly VERTICAL_INFLUENCE = 0.2  // How much mouse Y affects hook movement
 
     constructor(scene: Phaser.Scene) {
         this.scene = scene
@@ -64,6 +74,9 @@ export class HookManager {
                 this.state = 'falling'
                 this.hook.x = targetX
                 this.hook.y = targetY
+                // Reset physics when starting to fall
+                this.hookVelocityX = 0
+                this.hookVelocityY = 0
             }
         })
     }
@@ -71,6 +84,10 @@ export class HookManager {
     private reelInHook(): void {
         this.state = 'reeling'
         this.scene.tweens.killTweensOf(this.hook)
+
+        // Reset physics
+        this.hookVelocityX = 0
+        this.hookVelocityY = 0
 
         this.scene.tweens.add({
             targets: this.hook,
@@ -104,28 +121,65 @@ export class HookManager {
     private updateHookMovement(): void {
         if (this.state !== 'falling') return
 
-        this.hook.y += GAME_CONSTANTS.HOOK_FALL_SPEED * (this.scene.game.loop.delta / 1000)
+        const deltaTime = this.scene.game.loop.delta / 1000
 
+        // Get mouse world position
         const mouseWorldX = this.scene.cameras.main.getWorldPoint(this.mousePointer.x, this.mousePointer.y).x
         const mouseWorldY = this.scene.cameras.main.getWorldPoint(this.mousePointer.x, this.mousePointer.y).y
 
+        // Only apply physics if mouse is underwater
         if (mouseWorldY > GAME_CONSTANTS.WATER_LEVEL) {
+            // Calculate target positions with constraints
             const targetX = Phaser.Math.Clamp(mouseWorldX, 100, 700)
             const cameraTop = this.scene.cameras.main.scrollY - 200
             const cameraBottom = this.scene.cameras.main.scrollY + this.scene.cameras.main.height + 400
             const targetY = Phaser.Math.Clamp(mouseWorldY, Math.max(cameraTop, GAME_CONSTANTS.WATER_LEVEL + 20), cameraBottom)
 
-            const deltaTime = this.scene.game.loop.delta / 1000
+            // Calculate distance to target (rubber band effect)
+            const distanceX = targetX - this.hook.x
+            const distanceY = targetY - this.hook.y
 
-            if (Math.abs(this.hook.x - targetX) > 5) {
-                const directionX = targetX > this.hook.x ? 1 : -1
-                this.hook.x += directionX * GAME_CONSTANTS.HOOK_MOVE_SPEED * deltaTime
-            }
+            // Apply rubber band force (proportional to distance)
+            const forceX = distanceX * this.RUBBER_BAND_STRENGTH
+            const forceY = distanceY * this.RUBBER_BAND_STRENGTH * this.VERTICAL_INFLUENCE
 
-            if (Math.abs(this.hook.y - targetY) > 10) {
-                const directionY = targetY > this.hook.y ? 1 : -1
-                this.hook.y += directionY * (GAME_CONSTANTS.HOOK_MOVE_SPEED * 0.7) * deltaTime
-            }
+            // Update velocities with forces
+            this.hookVelocityX += forceX * deltaTime
+            this.hookVelocityY += forceY * deltaTime
+
+            // Apply damping to make movement smooth
+            this.hookVelocityX *= this.DAMPING
+            this.hookVelocityY *= this.DAMPING
+
+            // Clamp velocities to prevent extreme speeds
+            this.hookVelocityX = Phaser.Math.Clamp(this.hookVelocityX, -this.MAX_VELOCITY_X, this.MAX_VELOCITY_X)
+            this.hookVelocityY = Phaser.Math.Clamp(this.hookVelocityY, -this.MAX_VELOCITY_Y, this.MAX_VELOCITY_Y)
+        } else {
+            // If mouse is above water, gradually reduce horizontal movement and apply more damping
+            this.hookVelocityX *= this.DAMPING * 0.9
+            this.hookVelocityY *= this.DAMPING * 0.9
+        }
+
+        // Always apply gravity (constant downward force)
+        this.hookVelocityY += this.GRAVITY * deltaTime
+
+        // Apply velocities to hook position
+        this.hook.x += this.hookVelocityX * deltaTime
+        this.hook.y += this.hookVelocityY * deltaTime
+
+        // Keep hook within horizontal bounds
+        if (this.hook.x < 100) {
+            this.hook.x = 100
+            this.hookVelocityX = Math.max(0, this.hookVelocityX) // Remove leftward velocity
+        } else if (this.hook.x > 700) {
+            this.hook.x = 700
+            this.hookVelocityX = Math.min(0, this.hookVelocityX) // Remove rightward velocity
+        }
+
+        // Prevent hook from going above water
+        if (this.hook.y < GAME_CONSTANTS.WATER_LEVEL + 10) {
+            this.hook.y = GAME_CONSTANTS.WATER_LEVEL + 10
+            this.hookVelocityY = Math.max(0, this.hookVelocityY) // Remove upward velocity
         }
     }
 
@@ -154,11 +208,33 @@ export class HookManager {
         this.scene.tweens.killAll()
         this.hook.setPosition(400, GAME_CONSTANTS.WATER_LEVEL - 30)
         this.fishingLine.clear()
+        this.hookVelocityX = 0
+        this.hookVelocityY = 0
     }
 
     destroy(): void {
         this.hook.destroy()
         this.fishingLine.destroy()
         this.boat.destroy()
+    }
+
+    public adjustPhysics(settings: {
+        rubberBandStrength?: number,
+        damping?: number,
+        verticalInfluence?: number,
+        gravity?: number
+    }): void {
+        if (settings.rubberBandStrength !== undefined) {
+            (this as any).RUBBER_BAND_STRENGTH = settings.rubberBandStrength
+        }
+        if (settings.damping !== undefined) {
+            (this as any).DAMPING = settings.damping
+        }
+        if (settings.verticalInfluence !== undefined) {
+            (this as any).VERTICAL_INFLUENCE = settings.verticalInfluence
+        }
+        if (settings.gravity !== undefined) {
+            (this as any).GRAVITY = settings.gravity
+        }
     }
 }

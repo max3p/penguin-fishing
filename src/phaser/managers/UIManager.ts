@@ -33,7 +33,7 @@ export class UIManager {
             }
         ).setScrollFactor(0)
 
-        const backButton = this.scene.add.text(650, 50, 'Back to Village', {
+        const backButton = this.scene.add.text(600, 50, 'Back to Village', {
             fontSize: '16px',
             color: '#ffffff',
             backgroundColor: 'rgba(0, 0, 0, 0.7)',
