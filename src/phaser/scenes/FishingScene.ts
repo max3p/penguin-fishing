@@ -12,6 +12,42 @@ interface RockGenerationSettings {
   gradientDepth: number // Depth where gradient reaches end color (meters)
 }
 
+// Different map areas... to be expanded later
+export const AreaSettings = {
+  SHALLOW_WATERS: {
+    density: 1,
+    roughness: 0.1,
+    minWidth: 90,
+    maxWidth: 110,
+    seed: 12345,
+    gradientStartColor: 0x4eabc7,
+    gradientEndColor: 0x111724,
+    gradientDepth: 400
+  } as RockGenerationSettings,
+
+  DEEP_CAVERNS: {
+    density: 4,
+    roughness: 0.8,
+    minWidth: 40,
+    maxWidth: 100,
+    seed: 54321,
+    gradientStartColor: 0x2E5984,  // Medium blue
+    gradientEndColor: 0x0F1419,   // Almost black
+    gradientDepth: 1000
+  } as RockGenerationSettings,
+
+  NARROW_CANYON: {
+    density: 5,
+    roughness: 0.9,
+    minWidth: 20,
+    maxWidth: 60,
+    seed: 99999,
+    gradientStartColor: 0x3A5F8A,  // Steel blue
+    gradientEndColor: 0x1C2938,   // Dark steel
+    gradientDepth: 1200
+  } as RockGenerationSettings
+}
+
 export default class FishingScene extends Phaser.Scene {
   // Game objects
   private hook!: Phaser.GameObjects.Rectangle
@@ -29,7 +65,12 @@ export default class FishingScene extends Phaser.Scene {
   private hookSpeed = 150
   private scrollSpeed = 100
   private worldDepth = 0  // How far down we've scrolled
-  private actualDepth = 0 // Hook's actual depth from surface
+  private actualDepth = 0 // Hook's depth from surface
+  private hookState: 'ready' | 'casting' | 'falling' | 'reeling' = 'ready'
+  private castStartTime = 0
+  private castDuration = 1000
+  private hookFallSpeed = 80
+  private mousePointer!: Phaser.Input.Pointer
 
   // Constants
   private readonly WATER_LEVEL = 0
@@ -194,8 +235,7 @@ export default class FishingScene extends Phaser.Scene {
   }
 
   private createHook() {
-    // Start hook just below the boat
-    this.hook = this.add.rectangle(400, this.WATER_LEVEL + 20, 8, 8, 0xC0C0C0)
+    this.hook = this.add.rectangle(400, this.WATER_LEVEL - 30, 8, 8, 0xC0C0C0)
     this.hook.setOrigin(0.5)
   }
 
@@ -206,14 +246,14 @@ export default class FishingScene extends Phaser.Scene {
   private createUI() {
     // Instructions - fixed to camera
     this.instructionText = this.add.text(400, 30,
-      'Arrow Keys: Move Hook | DOWN: Drop Down | UP: Reel Up',
+      'Click to Cast Hook | Click Again to Reel In',
       {
         fontSize: '14px',
         color: '#000000',
         backgroundColor: 'rgba(255, 255, 255, 0.8)',
         padding: { x: 10, y: 5 }
       }
-    ).setOrigin(0.5).setScrollFactor(0) // Fixed to camera
+    ).setOrigin(0.5).setScrollFactor(0)
 
     // Depth indicator - fixed to camera
     this.depthText = this.add.text(50, 50,
@@ -224,7 +264,7 @@ export default class FishingScene extends Phaser.Scene {
         backgroundColor: 'rgba(255, 255, 255, 0.8)',
         padding: { x: 10, y: 5 }
       }
-    ).setScrollFactor(0) // Fixed to camera
+    ).setScrollFactor(0)
 
     // Back button - fixed to camera
     const backButton = this.add.text(650, 50, 'Back to Village', {
@@ -232,7 +272,7 @@ export default class FishingScene extends Phaser.Scene {
       color: '#ffffff',
       backgroundColor: 'rgba(0, 0, 0, 0.7)',
       padding: { x: 10, y: 5 }
-    }).setInteractive().setScrollFactor(0) // Fixed to camera
+    }).setInteractive().setScrollFactor(0)
 
     backButton.on('pointerdown', () => {
       this.scene.start('VillageScene')
@@ -240,7 +280,134 @@ export default class FishingScene extends Phaser.Scene {
   }
 
   private setupControls() {
-    this.cursors = this.input.keyboard!.createCursorKeys()
+    this.mousePointer = this.input.activePointer
+
+    this.hookState = 'ready'
+
+    // Handle mouse clicks for casting and reeling
+    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      if (this.hookState === 'ready') {
+        this.castHook(pointer)
+      } else if (this.hookState === 'falling') {
+        this.reelInHook()
+      }
+    })
+  }
+
+  private castHook(pointer: Phaser.Input.Pointer) {
+    this.hookState = 'casting'
+    this.castStartTime = this.time.now
+
+    // Calculate target position (where mouse clicked, but limit to water)
+    const targetX = Phaser.Math.Clamp(pointer.worldX, 100, 700)
+    const targetY = Math.max(this.WATER_LEVEL + 50, pointer.worldY)
+
+    // Calculate arc height based on distance
+    const distance = Phaser.Math.Distance.Between(this.hook.x, this.hook.y, targetX, targetY)
+    const arcHeight = Math.min(100, distance * 0.3) // Arc height scales with distance, max 100px
+
+    // Store initial position
+    const startX = this.hook.x
+    const startY = this.hook.y
+
+    // Create parabolic arc animation using a single tween with custom easing
+    this.tweens.add({
+      targets: this.hook,
+      x: targetX,
+      y: targetY,
+      duration: this.castDuration,
+      ease: 'Power2.easeInOut',
+      onUpdate: (tween: Phaser.Tweens.Tween) => {
+        const progress = tween.progress
+
+        // Calculate parabolic arc
+        // X moves linearly
+        this.hook.x = startX + (targetX - startX) * progress
+
+        // Y follows a parabolic path (goes up then down)
+        const linearY = startY + (targetY - startY) * progress
+        const arcOffset = 4 * arcHeight * progress * (1 - progress) // Parabolic formula
+        this.hook.y = linearY - arcOffset
+      },
+      onComplete: () => {
+        this.hookState = 'falling'
+        // Ensure final position is correct
+        this.hook.x = targetX
+        this.hook.y = targetY
+      }
+    })
+  }
+
+  private reelInHook() {
+    this.hookState = 'reeling'
+
+    // Stop any existing tweens
+    this.tweens.killTweensOf(this.hook)
+
+    // Animate hook back to boat
+    this.tweens.add({
+      targets: this.hook,
+      x: this.boat.x,
+      y: this.WATER_LEVEL - 30,
+      duration: 800,
+      ease: 'Power2.easeInOut',
+      onComplete: () => {
+        this.hookState = 'ready'
+      }
+    })
+  }
+
+  private updateHookMovement() {
+    if (this.hookState === 'falling') {
+      // Hook falls down automatically
+      this.hook.y += this.hookFallSpeed * (this.game.loop.delta / 1000)
+
+      // Guide hook towards mouse position (both X and Y)
+      const mouseWorldX = this.cameras.main.getWorldPoint(this.mousePointer.x, this.mousePointer.y).x
+      const mouseWorldY = this.cameras.main.getWorldPoint(this.mousePointer.x, this.mousePointer.y).y
+
+      // Only guide if mouse is underwater
+      if (mouseWorldY > this.WATER_LEVEL) {
+        const targetX = Phaser.Math.Clamp(mouseWorldX, 100, 700)
+
+        // Vertical limits: current camera view plus padding
+        const cameraTop = this.cameras.main.scrollY - 200 // 200px padding above screen
+        const cameraBottom = this.cameras.main.scrollY + this.cameras.main.height + 400 // 400px padding below screen
+        const targetY = Phaser.Math.Clamp(mouseWorldY, Math.max(cameraTop, this.WATER_LEVEL + 20), cameraBottom)
+
+        const moveSpeed = 60 // Speed of mouse following
+
+        // Move horizontally
+        if (Math.abs(this.hook.x - targetX) > 5) {
+          const directionX = targetX > this.hook.x ? 1 : -1
+          this.hook.x += directionX * moveSpeed * (this.game.loop.delta / 1000)
+        }
+
+        // Move vertically (but don't fight the natural falling too much)
+        if (Math.abs(this.hook.y - targetY) > 10) {
+          const directionY = targetY > this.hook.y ? 1 : -1
+          // Vertical movement is slower than horizontal to feel more natural
+          this.hook.y += directionY * (moveSpeed * 0.7) * (this.game.loop.delta / 1000)
+        }
+      }
+    }
+  }
+
+  private updateInstructions() {
+    switch (this.hookState) {
+      case 'ready':
+        this.instructionText.setText('Click to Cast Hook')
+        break
+      case 'casting':
+        this.instructionText.setText('Casting...')
+        break
+      case 'falling':
+        this.instructionText.setText('Move Mouse to Guide Hook | Click to Reel In')
+        break
+      case 'reeling':
+        this.instructionText.setText('Reeling In...')
+        break
+    }
   }
 
   // Seeded random number generator for consistent rock generation
@@ -355,10 +522,14 @@ export default class FishingScene extends Phaser.Scene {
   }
 
   private updateDepthDisplay() {
-    // Calculate depth from water surface
-    this.actualDepth = Math.max(0, this.hook.y - this.WATER_LEVEL)
-    const depthMeters = Math.floor(this.actualDepth / 10)
-    this.depthText.setText(`Depth: ${depthMeters}m`)
+    // Only show depth when hook is in water
+    if (this.hook.y > this.WATER_LEVEL) {
+      this.actualDepth = Math.max(0, this.hook.y - this.WATER_LEVEL)
+      const depthMeters = Math.floor(this.actualDepth / 10)
+      this.depthText.setText(`Depth: ${depthMeters}m`)
+    } else {
+      this.depthText.setText('Depth: 0m')
+    }
   }
 
   private checkRockGeneration() {
@@ -396,22 +567,11 @@ export default class FishingScene extends Phaser.Scene {
   update() {
     const deltaTime = this.game.loop.delta / 1000
 
-    // Hook movement controls 
-    if (this.cursors.left.isDown && this.hook.x > 50) {
-      this.hook.x -= this.hookSpeed * deltaTime
-    } else if (this.cursors.right.isDown && this.hook.x < 750) {
-      this.hook.x += this.hookSpeed * deltaTime
-    }
+    // Update hook movement based on state
+    this.updateHookMovement()
 
-    // Vertical movement
-    if (this.cursors.down.isDown) {
-      this.hook.y += this.hookSpeed * deltaTime
-    } else if (this.cursors.up.isDown) {
-      // Don't go above water surface
-      if (this.hook.y > this.WATER_LEVEL + 10) {
-        this.hook.y -= this.hookSpeed * deltaTime
-      }
-    }
+    // Update instructions
+    this.updateInstructions()
 
     // Generate more rocks as needed
     this.checkRockGeneration()
@@ -422,40 +582,5 @@ export default class FishingScene extends Phaser.Scene {
     this.updateDepthDisplay()
     this.drawRocks()
   }
-}
 
-// Different map areas... to be expanded later
-export const AreaSettings = {
-  SHALLOW_WATERS: {
-    density: 1,
-    roughness: 0.1,
-    minWidth: 90,
-    maxWidth: 110,
-    seed: 12345,
-    gradientStartColor: 0x4eabc7,
-    gradientEndColor: 0x111724,
-    gradientDepth: 400
-  } as RockGenerationSettings,
-
-  DEEP_CAVERNS: {
-    density: 4,
-    roughness: 0.8,
-    minWidth: 40,
-    maxWidth: 100,
-    seed: 54321,
-    gradientStartColor: 0x2E5984,  // Medium blue
-    gradientEndColor: 0x0F1419,   // Almost black
-    gradientDepth: 1000
-  } as RockGenerationSettings,
-
-  NARROW_CANYON: {
-    density: 5,
-    roughness: 0.9,
-    minWidth: 20,
-    maxWidth: 60,
-    seed: 99999,
-    gradientStartColor: 0x3A5F8A,  // Steel blue
-    gradientEndColor: 0x1C2938,   // Dark steel
-    gradientDepth: 1200
-  } as RockGenerationSettings
 }
