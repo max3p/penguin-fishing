@@ -11,7 +11,7 @@ export default class VillageScene extends Phaser.Scene {
 
   create() {
     // Set village background color (light green)
-    this.cameras.main.setBackgroundColor('#98FB98')
+    this.cameras.main.setBackgroundColor('#dfeef2')
     
     // Title
     this.add.text(400, 100, 'Frostbite Bay Village', {
