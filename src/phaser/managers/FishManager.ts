@@ -6,6 +6,7 @@ import { DEFAULT_FISH_SETTINGS } from '../config/FishSettings'
 import { FISH_SPECIES } from '../config/FishSpecies'
 import type { FishSpecies } from '../config/FishSpecies'
 import { GAME_CONSTANTS } from '../config/GameConstants'
+import type { HookManager } from './HookManager'
 
 export class FishManager {
     private scene: Phaser.Scene
@@ -13,40 +14,43 @@ export class FishManager {
     private settings: FishGenerationSettings
     private generatedDepth = 0
     private fishIdCounter = 0
+    private hookManager: HookManager | null = null
 
     constructor(scene: Phaser.Scene, settings: FishGenerationSettings = DEFAULT_FISH_SETTINGS) {
         this.scene = scene
         this.settings = settings
     }
 
+    // Set the hook manager reference for collision detection
+    setHookManager(hookManager: HookManager): void {
+        this.hookManager = hookManager
+    }
+
     // Generate fish for a depth range
     generateFish(startDepth: number, endDepth: number): void {
         const actualStartDepth = Math.max(startDepth, this.generatedDepth)
         const depthRange = endDepth - actualStartDepth
-        console.log(`Generating fish from ${actualStartDepth} to ${endDepth} (depth range: ${depthRange})`)
 
         if (depthRange <= 0) return
 
         // Calculate number of fish to generate based on density
         const fishCount = Math.floor((depthRange / 100) * this.settings.density)
-        console.log(`Calculated fish count: ${fishCount} for depth range ${depthRange}`)
 
         for (let i = 0; i < fishCount; i++) {
             this.createRandomFish(actualStartDepth, endDepth)
         }
 
         this.generatedDepth = Math.max(this.generatedDepth, endDepth)
-        console.log(`Updated generated depth to ${this.generatedDepth}`)
     }
 
     private createRandomFish(minDepth: number, maxDepth: number): void {
         // Convert depth pixels to meters for species selection
         const minDepthMeters = (minDepth - GAME_CONSTANTS.WATER_LEVEL) / 10
         const maxDepthMeters = (maxDepth - GAME_CONSTANTS.WATER_LEVEL) / 10
-        
+
         // Find eligible species for this depth range
         const eligibleSpecies = this.getEligibleSpecies(minDepthMeters, maxDepthMeters)
-        
+
         if (eligibleSpecies.length === 0) {
             return // No fish can spawn in this depth range
         }
@@ -61,13 +65,13 @@ export class FishManager {
         // Generate random depth within both the generation range AND species depth range
         const spawnMinDepth = Math.max(minDepth, GAME_CONSTANTS.WATER_LEVEL + selectedRule.minDepth * 10)
         const spawnMaxDepth = Math.min(maxDepth, GAME_CONSTANTS.WATER_LEVEL + selectedRule.maxDepth * 10)
-        
+
         if (spawnMinDepth >= spawnMaxDepth) return
 
         // Create fish with species-specific attributes
         const size = Phaser.Math.FloatBetween(species.minSize, species.maxSize)
         const speed = Phaser.Math.FloatBetween(species.minSpeed, species.maxSpeed)
-        
+
         // Add some variation to weight and value based on size
         const sizeMultiplier = size / ((species.minSize + species.maxSize) / 2)
         const weightVariation = Phaser.Math.FloatBetween(0.8, 1.2)
@@ -90,8 +94,6 @@ export class FishManager {
         // Create and store the fish
         const fish = new Fish(this.scene, fishData)
         this.fish.set(fishData.id, fish)
-
-        console.log(`Spawned ${species.name} at (${fishData.x}, ${fishData.y}) with size ${size} and speed ${speed}`)
     }
 
     private getEligibleSpecies(minDepthMeters: number, maxDepthMeters: number): FishSpawnRule[] {
@@ -108,13 +110,13 @@ export class FishManager {
                 return rule
             }
         }
-        
+
         // If no species "won" the spawn chance, try a fallback with reduced chances
         const fallbackChance = 0.1 // 10% chance to spawn something anyway
         if (Math.random() < fallbackChance && eligibleSpecies.length > 0) {
             return eligibleSpecies[Math.floor(Math.random() * eligibleSpecies.length)]
         }
-        
+
         return null
     }
 
@@ -126,10 +128,47 @@ export class FishManager {
     update(cameraY: number): void {
         const deltaTime = this.scene.game.loop.delta / 1000
 
+        // Check for hook-fish collisions first
+        this.checkHookCollisions()
+
         // Update all fish
         this.fish.forEach((fish, id) => {
             fish.update(deltaTime, cameraY)
         })
+    }
+
+    private checkHookCollisions(): void {
+        if (!this.hookManager || !this.hookManager.canCatchFish()) {
+            return // No hook manager or hook already has a fish
+        }
+
+        const hookBounds = this.hookManager.getHookBounds()
+
+        // Check collision with each fish
+        this.fish.forEach((fish, fishId) => {
+            const fishBounds = fish.getBounds()
+
+            // Check if hook rectangle intersects with fish rectangle
+            if (Phaser.Geom.Rectangle.Overlaps(hookBounds, fishBounds)) {
+                // Fish is caught!
+                const success = this.hookManager!.hookFish(fish)
+
+                if (success) {
+                    // Remove the fish from our collection since it's now caught
+                    // Don't destroy it yet - let the hook manager handle that during reeling
+                    this.fish.delete(fishId)
+                }
+            }
+        })
+    }
+
+    // Remove a specific fish (called when fish is caught)
+    removeFish(fishId: string): void {
+        const fish = this.fish.get(fishId)
+        if (fish) {
+            fish.destroy()
+            this.fish.delete(fishId)
+        }
     }
 
     // Check if more fish need to be generated

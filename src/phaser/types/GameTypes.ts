@@ -20,4 +20,5 @@ export interface GameConstants {
     CAST_DURATION: number
     SEGMENT_HEIGHT: number
     EASE_DISTANCE: number
+    BUCKET_MAX_WEIGHT: number
 }

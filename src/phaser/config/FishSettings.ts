@@ -14,7 +14,7 @@ export const FishAreaSettings = {
         spawnRules: [
             {
                 speciesId: 'atlantic_cod',
-                minDepth: 0,
+                minDepth: 10,
                 maxDepth: 200,
                 spawnChance: 0.4
             },
@@ -32,7 +32,7 @@ export const FishAreaSettings = {
             },
             {
                 speciesId: 'herring',
-                minDepth: 0,
+                minDepth: 10,
                 maxDepth: 150,
                 spawnChance: 0.6
             },

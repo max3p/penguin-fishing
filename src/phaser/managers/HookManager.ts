@@ -2,6 +2,7 @@
 
 import Phaser from 'phaser'
 import type { HookState } from '../types/GameTypes'
+import type { Fish } from '../entities/Fish'
 import { GAME_CONSTANTS } from '../config/GameConstants'
 
 export class HookManager {
@@ -11,6 +12,7 @@ export class HookManager {
     private boat!: Phaser.GameObjects.Rectangle
     private state: HookState = 'ready'
     private mousePointer: Phaser.Input.Pointer
+    private caughtFish: Fish | null = null
 
     private hookVelocityX = 0
     private hookVelocityY = 0
@@ -95,10 +97,49 @@ export class HookManager {
             y: GAME_CONSTANTS.WATER_LEVEL - 30,
             duration: 800,
             ease: 'Power2.easeInOut',
+            onUpdate: () => {
+                // If we have a caught fish, move it with the hook
+                if (this.caughtFish) {
+                    const fishSprite = this.caughtFish.getSprite()
+                    fishSprite.setPosition(this.hook.x, this.hook.y + 10)
+                }
+            },
             onComplete: () => {
+                // Fish has been successfully caught and reeled in
+                if (this.caughtFish) {
+                    this.onFishCaught(this.caughtFish)
+                    this.caughtFish.destroy()
+                    this.caughtFish = null
+                }
                 this.state = 'ready'
             }
         })
+    }
+
+    private onFishCaught(fish: Fish): void {
+        // Get fish info for display
+        const fishInfo = fish.getDisplayInfo()
+        
+        // Emit custom event for the scene to handle
+        this.scene.events.emit('fishCaught', fishInfo)
+        
+        // Remove the fish from the scene (it will be cleaned up by FishManager)
+        // We don't destroy it here since FishManager handles that
+        console.log(`Caught ${fishInfo.name}! Weight: ${fishInfo.weight.toFixed(1)}kg, Value: ${fishInfo.value.toFixed(0)}g`)
+    }
+
+    // Method to be called when a fish collision is detected
+    hookFish(fish: Fish): boolean {
+        // Only hook fish if we're in falling state and don't already have a fish
+        if (this.state === 'falling' && !this.caughtFish) {
+            this.caughtFish = fish
+            
+            // Automatically start reeling in when fish is hooked
+            this.reelInHook()
+
+            return true
+        }
+        return false
     }
 
     update(): void {
@@ -203,10 +244,22 @@ export class HookManager {
         return Math.max(0, this.hook.y - GAME_CONSTANTS.WATER_LEVEL)
     }
 
+    // Check if hook can catch fish (not already caught one)
+    canCatchFish(): boolean {
+        return this.state === 'falling' && this.caughtFish === null
+    }
+
+    // Get the bounds of the hook for collision detection
+    getHookBounds(): Phaser.Geom.Rectangle {
+        return this.hook.getBounds()
+    }
+
     reset(): void {
         this.state = 'ready'
+        this.caughtFish = null
         this.scene.tweens.killAll()
         this.hook.setPosition(400, GAME_CONSTANTS.WATER_LEVEL - 30)
+        this.hook.setFillStyle(0xC0C0C0) // Reset hook color
         this.fishingLine.clear()
         this.hookVelocityX = 0
         this.hookVelocityY = 0
