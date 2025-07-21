@@ -95,6 +95,8 @@ export default class FishingScene extends Phaser.Scene {
   }
 
   create() {
+    this.resetScene()
+
     // Create background layers
     this.createBackgrounds()
     this.createWaterSurface()
@@ -562,6 +564,45 @@ export default class FishingScene extends Phaser.Scene {
 
     // Update boat position to match waves
     this.boat.y = this.WATER_LEVEL + wave1 + wave2
+  }
+
+  private resetScene() {
+    // Reset rock generation data
+    this.generatedRockDepth = 0
+    this.rockPoints = {
+      left: [],
+      right: []
+    }
+
+    // Reset hook state
+    this.hookState = 'ready'
+    this.castStartTime = 0
+    this.actualDepth = 0
+    this.worldDepth = 0
+
+    // Clear any existing tweens
+    this.tweens.killAll()
+
+    // Clear graphics
+    if (this.rockGraphics) {
+      this.rockGraphics.clear()
+    }
+    if (this.fishingLine) {
+      this.fishingLine.clear()
+    }
+    if (this.waterSurface) {
+      this.waterSurface.clear()
+    }
+
+    // Remove existing textures
+    if (this.textures.exists('waterGradient')) {
+      this.textures.remove('waterGradient')
+    }
+
+    // Reset camera
+    this.cameras.main.stopFollow()
+    this.cameras.main.scrollX = 0
+    this.cameras.main.scrollY = 0
   }
 
   update() {
