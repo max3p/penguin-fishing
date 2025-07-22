@@ -2,7 +2,6 @@
 
 import Phaser from 'phaser'
 import type { FishData } from '../types/FishTypes'
-import { GAME_CONSTANTS } from '../config/GameConstants'
 
 export class Fish {
     private scene: Phaser.Scene

@@ -4,7 +4,6 @@ import { Fish } from '../entities/Fish'
 import type { FishData, FishGenerationSettings, FishSpawnRule } from '../types/FishTypes'
 import { DEFAULT_FISH_SETTINGS } from '../config/FishSettings'
 import { FISH_SPECIES } from '../config/FishSpecies'
-import type { FishSpecies } from '../config/FishSpecies'
 import { GAME_CONSTANTS } from '../config/GameConstants'
 import type { HookManager } from './HookManager'
 
@@ -132,7 +131,7 @@ export class FishManager {
         this.checkHookCollisions()
 
         // Update all fish
-        this.fish.forEach((fish, id) => {
+        this.fish.forEach((fish) => {
             fish.update(deltaTime, cameraY)
         })
     }

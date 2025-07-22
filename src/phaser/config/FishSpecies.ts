@@ -3,13 +3,13 @@
 export interface FishSpecies {
     id: string
     name: string
-    minSize: number
-    maxSize: number
-    minSpeed: number
-    maxSpeed: number
-    weight: number // base weight in kg
-    value: number // base value in gold
-    color: number // hex color for rendering
+    minSize: number // pixels
+    maxSize: number // pixels
+    minSpeed: number 
+    maxSpeed: number 
+    weight: number // kg
+    value: number // gold
+    color: number // hex color
 }
 
 export const FISH_SPECIES: Record<string, FishSpecies> = {

@@ -3,6 +3,7 @@
 import type { RockGenerationSettings } from "../types/GameTypes"
 
 export const AreaSettings = {
+    // Actyally used
     SHALLOW_WATERS: {
         density: 1,
         roughness: 0.1,
@@ -14,6 +15,7 @@ export const AreaSettings = {
         gradientDepth: 400
     } as RockGenerationSettings,
 
+    // Just an example
     DEEP_CAVERNS: {
         density: 4,
         roughness: 0.8,
@@ -25,6 +27,7 @@ export const AreaSettings = {
         gradientDepth: 1000
     } as RockGenerationSettings,
 
+    // Just an example
     NARROW_CANYON: {
         density: 5,
         roughness: 0.9,

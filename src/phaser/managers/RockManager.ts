@@ -6,7 +6,6 @@ import { GAME_CONSTANTS } from '../config/GameConstants'
 import { MathUtils } from '../utils/MathUtils'
 
 export class RockManager {
-    private scene: Phaser.Scene
     private rockGraphics: Phaser.GameObjects.Graphics
     private settings: RockGenerationSettings
     private generatedDepth = 0
@@ -16,7 +15,6 @@ export class RockManager {
     }
 
     constructor(scene: Phaser.Scene, settings: RockGenerationSettings) {
-        this.scene = scene
         this.settings = settings
         this.rockGraphics = scene.add.graphics()
     }
