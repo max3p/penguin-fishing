@@ -5,7 +5,7 @@ import type { FishData } from '../types/FishTypes'
 
 export class Fish {
     private scene: Phaser.Scene
-    private sprite: Phaser.GameObjects.Rectangle
+    private sprite: Phaser.GameObjects.Sprite
     private data: FishData
     private baseY: number // Original Y position for vertical bobbing
 
@@ -14,18 +14,26 @@ export class Fish {
         this.data = fishData
         this.baseY = fishData.y
 
-        // Create fish sprite with species-specific color
-        this.sprite = scene.add.rectangle(
+        // Create fish sprite with cod-swimming texture and species-specific tint
+        this.sprite = scene.add.sprite(
             fishData.x,
             fishData.y,
-            fishData.width,
-            fishData.height,
-            fishData.species.color
+            "cod_swimming"
         )
         this.sprite.setOrigin(0.5)
+        
+        // Scale the sprite to match the fish size
+        const scale = fishData.width / 128 // 128 is the original sprite width
+        this.sprite.setScale(scale)
+        
+        // Apply species-specific tint
+        this.sprite.setTint(fishData.species.color)
+        
+        // Start the swimming animation
+        this.sprite.play("cod-swimming")
     }
 
-    update(deltaTime: number, cameraY: number): void {
+    update(deltaTime: number): void {
         // Move horizontally
         this.data.x += this.data.speed * this.data.direction * deltaTime
 
@@ -46,6 +54,9 @@ export class Fish {
         } else if (this.data.direction < 0 && this.data.x < 100) {
             this.data.direction = 1
         }
+
+        // Flip sprite based on direction (head is on left, so flip when moving right)
+        this.sprite.setFlipX(this.data.direction > 0)
     }
 
     // Get collision bounds for future fish catching
@@ -59,7 +70,7 @@ export class Fish {
     }
 
     // Get sprite for advanced operations
-    getSprite(): Phaser.GameObjects.Rectangle {
+    getSprite(): Phaser.GameObjects.Sprite {
         return this.sprite
     }
 

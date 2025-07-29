@@ -34,19 +34,9 @@ export class HookManager {
     this.boat = this.scene.add
       .sprite(400, GAME_CONSTANTS.WATER_LEVEL, "boat_idle")
       .setOrigin(0.5, 0.5)
-      .setScale(2) //ALL sprites are 2x scaled
+      .setScale(2); //ALL sprites are 2x scaled
 
-    this.scene.anims.create({
-      key: "boat-idle",
-      frames: this.scene.anims.generateFrameNumbers("boat_idle", {
-        start: 0,
-        end: 3,
-      }),
-      frameRate: 4,
-      repeat: -1,
-    });
-
-    (this.boat as Phaser.GameObjects.Sprite).play("boat-idle");
+    this.boat.play("boat-idle");
 
     this.hook = this.scene.add.rectangle(
       400,

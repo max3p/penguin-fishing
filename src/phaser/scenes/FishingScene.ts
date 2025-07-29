@@ -10,6 +10,7 @@ import { GAME_CONSTANTS } from "../config/GameConstants";
 import { FishManager } from "../managers/FishManager";
 import { FishAreaSettings } from "../config/FishSettings";
 import boatSpriteUrl from '../../assets/sprites/max-idle.png';
+import codSwimmingSpriteUrl from '../../assets/sprites/cod-swimming.png';
 
 export default class FishingScene extends Phaser.Scene {
   private rockManager!: RockManager;
@@ -31,10 +32,16 @@ export default class FishingScene extends Phaser.Scene {
       frameWidth: 128,
       frameHeight: 128,
     });
+    
+    this.load.spritesheet("cod_swimming", codSwimmingSpriteUrl, {
+      frameWidth: 128,
+      frameHeight: 128,
+    });
   }
 
   create(): void {
     this.resetScene();
+    this.createAnimations();
     this.initializeManagers();
     this.setupCamera();
     this.generateInitialRocks();
@@ -55,6 +62,28 @@ export default class FishingScene extends Phaser.Scene {
     this.totalFishCaught = 0;
     this.totalValue = 0;
     this.bucketWeight = 0;
+  }
+
+  private createAnimations(): void {
+    this.anims.create({
+      key: "boat-idle",
+      frames: this.anims.generateFrameNumbers("boat_idle", {
+        start: 0,
+        end: 3,
+      }),
+      frameRate: 4,
+      repeat: -1,
+    });
+
+    this.anims.create({
+      key: "cod-swimming",
+      frames: this.anims.generateFrameNumbers("cod_swimming", {
+        start: 0,
+        end: 3,
+      }),
+      frameRate: 6,
+      repeat: -1,
+    });
   }
 
   private initializeManagers(): void {
@@ -104,7 +133,7 @@ export default class FishingScene extends Phaser.Scene {
       this.bucketWeight,
       GAME_CONSTANTS.BUCKET_MAX_WEIGHT
     );
-    this.fishManager.update(this.cameras.main.scrollY);
+    this.fishManager.update();
 
     if (
       this.fishManager.checkGenerationNeeded(

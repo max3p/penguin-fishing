@@ -124,7 +124,7 @@ export class FishManager {
         return Phaser.Math.FloatBetween(100, 700)
     }
 
-    update(cameraY: number): void {
+    update(): void {
         const deltaTime = this.scene.game.loop.delta / 1000
 
         // Check for hook-fish collisions first
@@ -132,7 +132,7 @@ export class FishManager {
 
         // Update all fish
         this.fish.forEach((fish) => {
-            fish.update(deltaTime, cameraY)
+            fish.update(deltaTime)
         })
     }
 
