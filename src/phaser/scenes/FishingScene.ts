@@ -98,7 +98,10 @@ export default class FishingScene extends Phaser.Scene {
   }
 
   private setupCamera(): void {
-    this.cameras.main.startFollow(this.hookManager.getHook(), false, 0, 0.1);
+    // Center the camera to show the full game world (100-700 on X axis)
+    // Game world is 600px wide, camera is 800px wide, so center at 400
+    this.cameras.main.setScroll(0, 0);
+    this.cameras.main.setFollowOffset(0, 0);
     this.cameras.main.setDeadzone(0, 100);
   }
 
@@ -127,6 +130,11 @@ export default class FishingScene extends Phaser.Scene {
 
   update(): void {
     this.hookManager.update();
+    
+    // Update camera to follow hook Y position while keeping X locked at 0
+    const hookY = this.hookManager.getHook().y;
+    this.cameras.main.setScroll(0, hookY - this.cameras.main.height / 2);
+    
     this.uiManager.updateDepth(this.hookManager.getDepth());
     this.uiManager.updateInstructions(this.hookManager.getState());
     this.uiManager.updateBucket(

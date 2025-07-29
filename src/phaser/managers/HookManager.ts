@@ -13,6 +13,10 @@ export class HookManager {
   private state: HookState = "ready";
   private mousePointer: Phaser.Input.Pointer;
   private caughtFish: Fish | null = null;
+  
+  // Fishing rod tip position relative to boat center
+  private readonly ROD_OFFSET_X = 104;
+  private readonly ROD_OFFSET_Y = -27;
 
   private hookVelocityX = 0;
   private hookVelocityY = 0;
@@ -39,8 +43,8 @@ export class HookManager {
     this.boat.play("boat-idle");
 
     this.hook = this.scene.add.rectangle(
-      400,
-      GAME_CONSTANTS.WATER_LEVEL - 30,
+      400 + this.ROD_OFFSET_X,
+      GAME_CONSTANTS.WATER_LEVEL + this.ROD_OFFSET_Y,
       8,
       8,
       0xc0c0c0
@@ -110,8 +114,8 @@ export class HookManager {
 
     this.scene.tweens.add({
       targets: this.hook,
-      x: this.boat.x,
-      y: GAME_CONSTANTS.WATER_LEVEL - 30,
+      x: this.boat.x + this.ROD_OFFSET_X,
+      y: this.boat.y + this.ROD_OFFSET_Y,
       duration: 800,
       ease: "Power2.easeInOut",
       onUpdate: () => {
@@ -270,7 +274,7 @@ export class HookManager {
   private updateFishingLine(): void {
     this.fishingLine.clear();
     this.fishingLine.lineStyle(2, 0x000000);
-    this.fishingLine.moveTo(this.boat.x, this.boat.y + 10);
+    this.fishingLine.moveTo(this.boat.x + this.ROD_OFFSET_X, this.boat.y + this.ROD_OFFSET_Y);
     this.fishingLine.lineTo(this.hook.x, this.hook.y);
     this.fishingLine.stroke();
   }
@@ -301,7 +305,7 @@ export class HookManager {
     this.state = "ready";
     this.caughtFish = null;
     this.scene.tweens.killAll();
-    this.hook.setPosition(400, GAME_CONSTANTS.WATER_LEVEL - 30);
+    this.hook.setPosition(400 + this.ROD_OFFSET_X, GAME_CONSTANTS.WATER_LEVEL + this.ROD_OFFSET_Y);
     this.hook.setFillStyle(0xc0c0c0); // Reset hook color
     this.fishingLine.clear();
     this.hookVelocityX = 0;
