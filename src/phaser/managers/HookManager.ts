@@ -13,6 +13,8 @@ export class HookManager {
   private state: HookState = "ready";
   private mousePointer: Phaser.Input.Pointer;
   private caughtFish: Fish | null = null;
+  private bucketWeight: number = 0;
+  private maxBucketWeight: number = GAME_CONSTANTS.BUCKET_MAX_WEIGHT;
   
   // Fishing rod tip position relative to boat center
   private readonly ROD_OFFSET_X = 104;
@@ -56,11 +58,20 @@ export class HookManager {
   private setupInput(): void {
     this.scene.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
       if (this.state === "ready") {
-        this.castHook(pointer);
+        if (this.isBucketFull()) {
+          this.showBucketFullNotification();
+        } else {
+          this.castHook(pointer);
+        }
       } else if (this.state === "falling") {
         this.reelInHook();
       }
     });
+  }
+
+  private showBucketFullNotification(): void {
+    // Emit event for the scene to handle the notification
+    this.scene.events.emit("bucketFull");
   }
 
   private castHook(pointer: Phaser.Input.Pointer): void {
@@ -291,9 +302,19 @@ export class HookManager {
     return Math.max(0, this.hook.y - GAME_CONSTANTS.WATER_LEVEL);
   }
 
-  // Check if hook can catch fish (not already caught one)
+  // Update bucket weight
+  updateBucketWeight(weight: number): void {
+    this.bucketWeight = weight;
+  }
+
+  // Check if bucket is full
+  isBucketFull(): boolean {
+    return this.bucketWeight >= this.maxBucketWeight;
+  }
+
+  // Check if hook can catch fish (not already caught one and bucket not full)
   canCatchFish(): boolean {
-    return this.state === "falling" && this.caughtFish === null;
+    return this.state === "falling" && this.caughtFish === null && !this.isBucketFull();
   }
 
   // Get the bounds of the hook for collision detection

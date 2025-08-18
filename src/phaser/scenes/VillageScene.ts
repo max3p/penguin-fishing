@@ -251,7 +251,7 @@ export default class VillageScene extends Phaser.Scene {
         fontFamily: 'Arial, sans-serif'
       }).setOrigin(0, 0.5)
       
-      const valueText = this.add.text(450, y, `${Math.round(fish.totalValue)}g`, {
+      const valueText = this.add.text(450, y, `${fish.totalValue}g`, {
         fontSize: '16px',
         color: '#FFD700',
         fontFamily: 'Arial, sans-serif',
@@ -285,7 +285,7 @@ export default class VillageScene extends Phaser.Scene {
     }).setOrigin(0, 0.5)
 
     // Total value
-    const totalText = this.add.text(400, 450, `Total Value: ${Math.round(totalValue)}g`, {
+    const totalText = this.add.text(400, 450, `Total Value: ${totalValue}g`, {
       fontSize: '22px',
       color: '#FFD700',
       fontFamily: 'Arial, sans-serif',

@@ -17,6 +17,7 @@ interface CaughtFish {
   weight: number
   value: number
   totalValue: number
+  id: string
 }
 
 export default class FishingScene extends Phaser.Scene {
@@ -76,6 +77,11 @@ export default class FishingScene extends Phaser.Scene {
     this.bucketWeight = 0;
     this.caughtFish = [];
     this.eventListenersSet = false;
+    
+    // Reset hook manager bucket weight
+    if (this.hookManager) {
+      this.hookManager.updateBucketWeight(0);
+    }
   }
 
   private createReturnButton(): void {
@@ -162,9 +168,13 @@ export default class FishingScene extends Phaser.Scene {
     
     // Remove any existing listeners to prevent duplicates
     this.events.off("fishCaught", this.onFishCaught, this);
+    this.events.off("bucketFull", this.onBucketFull, this);
     
     // Add the fish caught event listener
     this.events.on("fishCaught", this.onFishCaught, this);
+    
+    // Add the bucket full event listener
+    this.events.on("bucketFull", this.onBucketFull, this);
     
     // Add keyboard shortcut to return to village
     this.input.keyboard?.on('keydown-ESC', () => {
@@ -177,33 +187,60 @@ export default class FishingScene extends Phaser.Scene {
   private onFishCaught(fishInfo: any): void {
     console.log('Fish caught event triggered:', fishInfo.name);
     
-    // Check if this fish is already in the caught fish array to prevent duplicates
-    const fishAlreadyCaught = this.caughtFish.some(fish => 
-      fish.species === fishInfo.name && 
-      Math.abs(fish.weight - fishInfo.weight) < 0.1
-    );
+    // Compute integer gold for this fish at catch time
+    const fishGold = Math.round(fishInfo.value);
     
-    if (fishAlreadyCaught) {
-      console.log('Fish already caught, skipping duplicate:', fishInfo.name);
-      return;
-    }
+    // Add a unique identifier to prevent actual duplicates (UI-only)
+    const fishId = `${fishInfo.name}_${Date.now()}_${Math.random()}`;
     
     this.totalFishCaught++;
-    this.totalValue += fishInfo.value;
+    this.totalValue += fishGold;
     this.bucketWeight += fishInfo.weight;
 
-    // Store caught fish data for the results modal
+    // Update the hook manager's bucket weight
+    this.hookManager.updateBucketWeight(this.bucketWeight);
+
+    // Store caught fish data for the results modal (values as integers)
     this.caughtFish.push({
       species: fishInfo.name,
       weight: fishInfo.weight,
-      value: fishInfo.value,
-      totalValue: fishInfo.value
+      value: fishGold,
+      totalValue: fishGold,
+      id: fishId
     })
 
     console.log('Total fish caught:', this.totalFishCaught, 'Total value:', this.totalValue);
     console.log('Caught fish array length:', this.caughtFish.length);
 
-    this.uiManager.showFishCaught(fishInfo);
+    // Show UI notification (will round internally as well)
+    this.uiManager.showFishCaught({ ...fishInfo, value: fishGold });
+  }
+
+  private onBucketFull(): void {
+    this.showBucketFullNotification();
+  }
+
+  private showBucketFullNotification(): void {
+    // Create a notification that the bucket is full
+    const notification = this.add.text(400, 250, 'Bucket is Full!', {
+      fontSize: '24px',
+      color: '#FF0000',
+      backgroundColor: '#000000',
+      padding: { x: 20, y: 10 }
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(200);
+
+    const message = this.add.text(400, 290, 'Return to Frostbite Bay to sell your fish!', {
+      fontSize: '16px',
+      color: '#FFFFFF',
+      backgroundColor: '#000000',
+      padding: { x: 15, y: 8 }
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(200);
+
+    // Auto-hide the notification after 4 seconds
+    this.time.delayedCall(4000, () => {
+      notification.destroy();
+      message.destroy();
+    });
   }
 
   private generateInitialRocks(): void {
@@ -264,6 +301,7 @@ export default class FishingScene extends Phaser.Scene {
 
   destroy(): void {
     this.events.off("fishCaught", this.onFishCaught, this);
+    this.events.off("bucketFull", this.onBucketFull, this);
     this.rockManager?.destroy();
     this.waterManager?.destroy();
     this.hookManager?.destroy();
