@@ -12,6 +12,13 @@ import { FishAreaSettings } from "../config/FishSettings";
 import boatSpriteUrl from '../../assets/sprites/max-idle.png';
 import codSwimmingSpriteUrl from '../../assets/sprites/cod-swimming.png';
 
+interface CaughtFish {
+  species: string
+  weight: number
+  value: number
+  totalValue: number
+}
+
 export default class FishingScene extends Phaser.Scene {
   private rockManager!: RockManager;
   private waterManager!: WaterManager;
@@ -22,6 +29,8 @@ export default class FishingScene extends Phaser.Scene {
 
   private totalFishCaught = 0;
   private totalValue = 0;
+  private caughtFish: CaughtFish[] = [];
+  private eventListenersSet = false;
 
   constructor() {
     super("FishingScene");
@@ -46,6 +55,9 @@ export default class FishingScene extends Phaser.Scene {
     this.setupCamera();
     this.generateInitialRocks();
     this.setupEventListeners();
+    
+    // Add return to village button
+    this.createReturnButton();
   }
 
   private resetScene(): void {
@@ -62,6 +74,43 @@ export default class FishingScene extends Phaser.Scene {
     this.totalFishCaught = 0;
     this.totalValue = 0;
     this.bucketWeight = 0;
+    this.caughtFish = [];
+    this.eventListenersSet = false;
+  }
+
+  private createReturnButton(): void {
+    const returnBtn = this.add.text(700, 50, '🏠 Village', {
+      fontSize: '16px',
+      color: '#FFFFFF',
+      backgroundColor: '#4A90E2',
+      padding: { x: 12, y: 8 }
+    }).setOrigin(0.5).setInteractive().setScrollFactor(0).setDepth(100)
+
+    returnBtn.on('pointerover', () => {
+      returnBtn.setBackgroundColor('#5BA0F2')
+    })
+    
+    returnBtn.on('pointerout', () => {
+      returnBtn.setBackgroundColor('#4A90E2')
+    })
+    
+    returnBtn.on('pointerdown', () => {
+      this.returnToVillage()
+    })
+  }
+
+  private returnToVillage(): void {
+    // Pass fishing results data to the VillageScene via game data
+    if (this.caughtFish.length > 0) {
+      (this.game as any).fishingResults = {
+        fishCaught: this.totalFishCaught,
+        totalValue: this.totalValue,
+        caughtFish: this.caughtFish
+      }
+      console.log('Passing fishing results:', (this.game as any).fishingResults)
+    }
+    
+    this.scene.start('VillageScene')
   }
 
   private createAnimations(): void {
@@ -106,13 +155,53 @@ export default class FishingScene extends Phaser.Scene {
   }
 
   private setupEventListeners(): void {
+    // Only set up event listeners once to prevent duplicates
+    if (this.eventListenersSet) {
+      return;
+    }
+    
+    // Remove any existing listeners to prevent duplicates
+    this.events.off("fishCaught", this.onFishCaught, this);
+    
+    // Add the fish caught event listener
     this.events.on("fishCaught", this.onFishCaught, this);
+    
+    // Add keyboard shortcut to return to village
+    this.input.keyboard?.on('keydown-ESC', () => {
+      this.returnToVillage()
+    })
+    
+    this.eventListenersSet = true;
   }
 
   private onFishCaught(fishInfo: any): void {
+    console.log('Fish caught event triggered:', fishInfo.name);
+    
+    // Check if this fish is already in the caught fish array to prevent duplicates
+    const fishAlreadyCaught = this.caughtFish.some(fish => 
+      fish.species === fishInfo.name && 
+      Math.abs(fish.weight - fishInfo.weight) < 0.1
+    );
+    
+    if (fishAlreadyCaught) {
+      console.log('Fish already caught, skipping duplicate:', fishInfo.name);
+      return;
+    }
+    
     this.totalFishCaught++;
     this.totalValue += fishInfo.value;
     this.bucketWeight += fishInfo.weight;
+
+    // Store caught fish data for the results modal
+    this.caughtFish.push({
+      species: fishInfo.name,
+      weight: fishInfo.weight,
+      value: fishInfo.value,
+      totalValue: fishInfo.value
+    })
+
+    console.log('Total fish caught:', this.totalFishCaught, 'Total value:', this.totalValue);
+    console.log('Caught fish array length:', this.caughtFish.length);
 
     this.uiManager.showFishCaught(fishInfo);
   }

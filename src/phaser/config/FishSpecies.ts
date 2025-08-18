@@ -8,7 +8,7 @@ export interface FishSpecies {
     minSpeed: number 
     maxSpeed: number 
     weight: number // kg
-    value: number // gold
+    value: number // gold per kg
     color: number // hex color
 }
 

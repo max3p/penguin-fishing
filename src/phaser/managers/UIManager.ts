@@ -48,16 +48,7 @@ export class UIManager {
             }
         ).setScrollFactor(0).setDepth(100)
 
-        const backButton = this.scene.add.text(600, 50, 'Back to Village', {
-            fontSize: '16px',
-            color: '#ffffff',
-            backgroundColor: 'rgba(0, 0, 0, 0.7)',
-            padding: { x: 10, y: 5 }
-        }).setInteractive().setScrollFactor(0).setDepth(100)
 
-        backButton.on('pointerdown', () => {
-            this.scene.scene.start('VillageScene')
-        })
     }
 
     private createCatchNotification(): void {
