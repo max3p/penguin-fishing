@@ -7,8 +7,6 @@ export interface RockGenerationSettings {
     maxWidth: number
     seed: number
     gradientStartColor: number
-    gradientEndColor: number
-    gradientDepth: number
     depthLimit: number // Maximum depth in pixels before hook auto-reels
 }
 

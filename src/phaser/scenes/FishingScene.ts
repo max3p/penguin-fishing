@@ -284,6 +284,9 @@ export default class FishingScene extends Phaser.Scene {
     }
 
     this.rockManager.drawRocks();
+
+    // Update water manager to keep tiles in sync with camera
+    this.waterManager.updateDepthFilter(this.hookManager.getDepth());
   }
 
   setRockSettings(settings: any): void {

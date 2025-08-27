@@ -50,6 +50,7 @@ export class HookManager {
       .setScale(2); //ALL sprites are 2x scaled
 
     this.boat.play("boat-idle");
+    this.boat.setDepth(100); // Above depth filter, below UI
 
     this.hook = this.scene.add.rectangle(
       400 + this.ROD_OFFSET_X,
@@ -59,7 +60,10 @@ export class HookManager {
       0xc0c0c0
     );
     this.hook.setOrigin(0.5);
+    this.hook.setDepth(100); // Above depth filter, below UI
+    
     this.fishingLine = this.scene.add.graphics();
+    this.fishingLine.setDepth(100); // Above depth filter, below UI
   }
 
   private setupInput(): void {

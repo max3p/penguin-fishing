@@ -17,6 +17,7 @@ export class RockManager {
     constructor(scene: Phaser.Scene, settings: RockGenerationSettings) {
         this.settings = settings
         this.rockGraphics = scene.add.graphics()
+        this.rockGraphics.setDepth(100) // Above depth filter, below UI
     }
 
     generateRocks(startDepth: number, endDepth: number): void {

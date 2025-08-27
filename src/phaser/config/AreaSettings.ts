@@ -11,8 +11,6 @@ export const AreaSettings = {
         maxWidth: 110,
         seed: 12345,
         gradientStartColor: 0x4eabc7,
-        gradientEndColor: 0x111724,
-        gradientDepth: 10000,
         depthLimit: 1000
     } as RockGenerationSettings,
 
@@ -24,8 +22,6 @@ export const AreaSettings = {
         maxWidth: 100,
         seed: 54321,
         gradientStartColor: 0x2E5984,
-        gradientEndColor: 0x0F1419,
-        gradientDepth: 10000,
         depthLimit: 1000
     } as RockGenerationSettings,
 
@@ -37,8 +33,6 @@ export const AreaSettings = {
         maxWidth: 60,
         seed: 99999,
         gradientStartColor: 0x3A5F8A,
-        gradientEndColor: 0x1C2938,
-        gradientDepth: 10000,
         depthLimit: 1000
     } as RockGenerationSettings
 }

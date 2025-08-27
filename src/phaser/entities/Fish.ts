@@ -21,6 +21,7 @@ export class Fish {
             "cod_swimming"
         )
         this.sprite.setOrigin(0.5)
+        this.sprite.setDepth(100); // Above depth filter, below UI
         
         // Scale the sprite to match the fish size
         const scale = fishData.width / 128 // 128 is the original sprite width
