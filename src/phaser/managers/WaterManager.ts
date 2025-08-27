@@ -1,6 +1,6 @@
 // src/phaser/managers/WaterManager.ts
 import Phaser from 'phaser'
-import type { RockGenerationSettings } from '../types/GameTypes'
+import type { FishingArea } from '../types/GameTypes'
 import { GAME_CONSTANTS } from '../config/GameConstants'
 
 export class WaterManager {
@@ -9,13 +9,13 @@ export class WaterManager {
     private waterBackground: Phaser.GameObjects.Rectangle | null = null
     private depthFilter: Phaser.GameObjects.Rectangle | null = null
     private skyBackground: Phaser.GameObjects.Rectangle
-    private settings: RockGenerationSettings
+    private areaSettings: FishingArea
 
-    constructor(scene: Phaser.Scene, settings: RockGenerationSettings) {
+    constructor(scene: Phaser.Scene, areaSettings: FishingArea) {
         this.scene = scene
-        this.settings = settings
+        this.areaSettings = areaSettings
         this.waterSurface = scene.add.graphics()
-        this.skyBackground = scene.add.rectangle(400, -500, 800, 1000, 0x87CEEB)
+        this.skyBackground = scene.add.rectangle(400, -500, 800, 1000, areaSettings.skyColor)
         this.skyBackground.setOrigin(0.5, 1)
         this.skyBackground.y = GAME_CONSTANTS.WATER_LEVEL
 
@@ -24,7 +24,7 @@ export class WaterManager {
 
     private createWaterBackground(): void {
         // Create a simple solid water background that extends far down
-        this.waterBackground = this.scene.add.rectangle(400, GAME_CONSTANTS.WATER_LEVEL, 800, 50000, this.settings.gradientStartColor)
+        this.waterBackground = this.scene.add.rectangle(400, GAME_CONSTANTS.WATER_LEVEL, 800, 50000, this.areaSettings.waterColor)
         this.waterBackground.setOrigin(0.5, 0)
         this.waterBackground.setDepth(0) // Background layer
         
@@ -41,7 +41,7 @@ export class WaterManager {
         
         // Calculate darkness based on depth
         // At 0m: alpha = 0 (no darkness)
-        // At 500m: alpha = 0.9 (very dark)
+        // At 500m: alpha = 0.9 (90% darkness)
         // Note: hookDepth is in pixels, so 500m = 5000 pixels
         const maxDepthPixels = 5000 // 500 meters in pixels (500 * 10)
         const maxAlpha = 0.9 // maximum darkness (90%)
@@ -52,8 +52,13 @@ export class WaterManager {
         this.depthFilter.setAlpha(alpha)
     }
 
-    updateSettings(settings: Partial<RockGenerationSettings>): void {
-        this.settings = { ...this.settings, ...settings }
+    updateAreaSettings(areaSettings: FishingArea): void {
+        this.areaSettings = areaSettings
+        
+        // Update sky color
+        this.skyBackground.setFillStyle(areaSettings.skyColor)
+        
+        // Recreate water background with new color
         this.createWaterBackground()
     }
 

@@ -1,21 +1,23 @@
 // src/phaser/managers/RockManager.ts
 
 import Phaser from 'phaser'
-import type { RockGenerationSettings } from '../types/GameTypes'
+import type { RockGenerationSettings, FishingArea } from '../types/GameTypes'
 import { GAME_CONSTANTS } from '../config/GameConstants'
 import { MathUtils } from '../utils/MathUtils'
 
 export class RockManager {
     private rockGraphics: Phaser.GameObjects.Graphics
-    private settings: RockGenerationSettings
+    private rockSettings: RockGenerationSettings
+    private areaSettings: FishingArea
     private generatedDepth = 0
     private rockPoints: { left: Phaser.Math.Vector2[], right: Phaser.Math.Vector2[] } = {
         left: [],
         right: []
     }
 
-    constructor(scene: Phaser.Scene, settings: RockGenerationSettings) {
-        this.settings = settings
+    constructor(scene: Phaser.Scene, areaSettings: FishingArea) {
+        this.areaSettings = areaSettings
+        this.rockSettings = areaSettings.rockSettings
         this.rockGraphics = scene.add.graphics()
         this.rockGraphics.setDepth(100) // Above depth filter, below UI
     }
@@ -27,8 +29,8 @@ export class RockManager {
             const depthFromWater = depth - GAME_CONSTANTS.WATER_LEVEL
             const easeFactor = Math.min(1, depthFromWater / GAME_CONSTANTS.EASE_DISTANCE)
 
-            const adjustedMinWidth = this.settings.minWidth * easeFactor
-            const adjustedMaxWidth = this.settings.maxWidth * easeFactor
+            const adjustedMinWidth = this.rockSettings.minWidth * easeFactor
+            const adjustedMaxWidth = this.rockSettings.maxWidth * easeFactor
 
             // Generate left wall
             this.generateWallPoint('left', depth, adjustedMinWidth, adjustedMaxWidth, easeFactor)
@@ -42,10 +44,10 @@ export class RockManager {
 
     private generateWallPoint(side: 'left' | 'right', depth: number, minWidth: number, maxWidth: number, easeFactor: number): void {
         const seedOffset = side === 'left' ? 0 : 1000
-        const seed = this.settings.seed + depth * 0.1 + seedOffset
+        const seed = this.rockSettings.seed + depth * 0.1 + seedOffset
         const noise = MathUtils.seededRandom(seed)
         const width = minWidth + (maxWidth - minWidth) * noise
-        const roughness = (MathUtils.seededRandom(seed * 1.5) - 0.5) * this.settings.roughness * 20 * easeFactor
+        const roughness = (MathUtils.seededRandom(seed * 1.5) - 0.5) * this.rockSettings.roughness * 20 * easeFactor
 
         const x = side === 'left' ? width + roughness : 800 - width - roughness
         this.rockPoints[side].push(new Phaser.Math.Vector2(x, depth))
@@ -53,8 +55,10 @@ export class RockManager {
 
     drawRocks(): void {
         this.rockGraphics.clear()
-        this.rockGraphics.fillStyle(0x4A4A4A)
-        this.rockGraphics.lineStyle(2, 0x2A2A2A)
+        
+        // Use area-specific rock colors
+        this.rockGraphics.fillStyle(this.areaSettings.rockColor)
+        this.rockGraphics.lineStyle(2, this.areaSettings.rockOutlineColor)
 
         this.drawWall('left')
         this.drawWall('right')
@@ -89,8 +93,14 @@ export class RockManager {
         return this.generatedDepth
     }
 
-    updateSettings(settings: Partial<RockGenerationSettings>): void {
-        this.settings = { ...this.settings, ...settings }
+    updateAreaSettings(areaSettings: FishingArea): void {
+        this.areaSettings = areaSettings
+        this.rockSettings = areaSettings.rockSettings
+        this.redrawRocks()
+    }
+
+    private redrawRocks(): void {
+        this.drawRocks()
     }
 
     reset(): void {

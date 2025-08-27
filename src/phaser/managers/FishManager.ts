@@ -56,10 +56,22 @@ export class FishManager {
 
         // Select a species based on spawn rules
         const selectedRule = this.selectSpeciesByChance(eligibleSpecies)
-        if (!selectedRule) return
+        if (!selectedRule) {
+            return
+        }
 
-        const species = FISH_SPECIES[selectedRule.speciesId.toUpperCase()]
-        if (!species) return
+        // Find the species by matching the lowercase ID
+        let species = null;
+        for (const key in FISH_SPECIES) {
+            if (FISH_SPECIES[key].id === selectedRule.speciesId) {
+                species = FISH_SPECIES[key];
+                break;
+            }
+        }
+        
+        if (!species) {
+            return
+        }
 
         // Generate random depth within both the generation range AND species depth range
         const spawnMinDepth = Math.max(minDepth, GAME_CONSTANTS.WATER_LEVEL + selectedRule.minDepth * 10)

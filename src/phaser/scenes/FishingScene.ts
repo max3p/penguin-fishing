@@ -5,7 +5,7 @@ import { RockManager } from "../managers/RockManager";
 import { WaterManager } from "../managers/WaterManager";
 import { HookManager } from "../managers/HookManager";
 import { UIManager } from "../managers/UIManager";
-import { AreaSettings } from "../config/AreaSettings";
+import { getCurrentAreaSettings, getCurrentRockSettings, AreaSettings } from "../config/AreaSettings";
 import { GAME_CONSTANTS } from "../config/GameConstants";
 import { FishManager } from "../managers/FishManager";
 import { FishAreaSettings } from "../config/FishSettings";
@@ -142,12 +142,21 @@ export default class FishingScene extends Phaser.Scene {
   }
 
   private initializeManagers(): void {
-    const settings = AreaSettings.SHALLOW_WATERS;
+    const currentArea = getCurrentAreaSettings();
 
-    this.waterManager = new WaterManager(this, settings);
-    this.rockManager = new RockManager(this, settings);
-    this.hookManager = new HookManager(this, settings);
-    this.fishManager = new FishManager(this, FishAreaSettings.SHALLOW_WATERS);
+    this.waterManager = new WaterManager(this, currentArea);
+    this.rockManager = new RockManager(this, currentArea);
+    this.hookManager = new HookManager(this, currentArea);
+    
+    // Use fish settings for the current area
+    const fishSettings = FishAreaSettings[currentArea.id as keyof typeof FishAreaSettings];
+    if (fishSettings) {
+      this.fishManager = new FishManager(this, fishSettings);
+    } else {
+      console.warn('No fish settings found for area:', currentArea.id, '- using SHALLOW_WATERS as fallback');
+      this.fishManager = new FishManager(this, FishAreaSettings.SHALLOW_WATERS);
+    }
+    
     this.fishManager.setHookManager(this.hookManager);
     this.uiManager = new UIManager(this);
   }
@@ -248,8 +257,12 @@ export default class FishingScene extends Phaser.Scene {
       GAME_CONSTANTS.WATER_LEVEL,
       GAME_CONSTANTS.WATER_LEVEL + 1200
     );
+    
+    // Start fish generation from a depth where fish can actually spawn
+    // Fish settings start at 10m = 100 pixels, so start from 100 pixels below water level
+    const fishStartDepth = GAME_CONSTANTS.WATER_LEVEL + 100;
     this.fishManager.generateFish(
-      GAME_CONSTANTS.WATER_LEVEL,
+      fishStartDepth,
       GAME_CONSTANTS.WATER_LEVEL + 1200
     );
   }
@@ -275,6 +288,7 @@ export default class FishingScene extends Phaser.Scene {
       )
     ) {
       const currentDepth = this.fishManager.getGeneratedDepth();
+      // Ensure we generate fish from the current depth to maintain continuous spawning
       this.fishManager.generateFish(currentDepth, currentDepth + 1200);
     }
 
@@ -290,8 +304,33 @@ export default class FishingScene extends Phaser.Scene {
   }
 
   setRockSettings(settings: any): void {
-    this.rockManager.updateSettings(settings);
-    this.waterManager.updateSettings(settings);
+    // This method is deprecated - use updateAreaSettings instead
+    console.warn('setRockSettings is deprecated. Use updateAreaSettings instead.');
+  }
+
+  updateAreaSettings(areaId: string): void {
+    const newArea = AreaSettings[areaId];
+    
+    if (newArea) {
+      this.rockManager.updateAreaSettings(newArea);
+      this.waterManager.updateAreaSettings(newArea);
+      this.hookManager.updateAreaSettings(newArea);
+      
+      // Update fish manager with new area settings
+      const fishSettings = FishAreaSettings[newArea.id as keyof typeof FishAreaSettings];
+      if (fishSettings) {
+        this.fishManager.updateSettings(fishSettings);
+      } else {
+        console.warn('No fish settings found for new area:', newArea.id);
+      }
+      
+      // Regenerate rocks and fish with new settings
+      this.rockManager.reset();
+      this.fishManager.reset();
+      this.generateInitialRocks();
+    } else {
+      console.error(`Area ${areaId} not found`);
+    }
   }
 
   getFishingStats() {

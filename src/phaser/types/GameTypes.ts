@@ -10,6 +10,28 @@ export interface RockGenerationSettings {
     depthLimit: number // Maximum depth in pixels before hook auto-reels
 }
 
+export interface FishingArea {
+    // Basic area info
+    id: string
+    name: string
+    description: string
+    
+    // Visual characteristics
+    skyColor: number
+    waterColor: number
+    rockColor: number
+    rockOutlineColor: number
+    
+    // Rock generation
+    rockSettings: RockGenerationSettings
+    
+    // Fish settings
+    fishDensity: number
+    
+    // Procedural generation
+    seed: number
+}
+
 export type HookState = 'ready' | 'casting' | 'falling' | 'reeling'
 
 export interface GameConstants {

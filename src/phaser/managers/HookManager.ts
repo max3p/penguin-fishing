@@ -1,7 +1,7 @@
 // src/phaser/managers/HookManager.ts
 
 import Phaser from "phaser";
-import type { HookState, RockGenerationSettings } from "../types/GameTypes";
+import type { HookState, FishingArea } from "../types/GameTypes";
 import type { Fish } from "../entities/Fish";
 import { GAME_CONSTANTS } from "../config/GameConstants";
 
@@ -28,16 +28,13 @@ export class HookManager {
   private readonly MAX_VELOCITY_Y = 1500; // Max vertical speed (for upward movement)
   private readonly GRAVITY = 1200; // Constant downward force
   private readonly VERTICAL_INFLUENCE = 0.2; // How much mouse Y affects hook movement
-  private depthLimit: number = 100; // Default depth limit in meters
+  
+  private areaSettings: FishingArea;
 
-  constructor(scene: Phaser.Scene, areaSettings?: RockGenerationSettings) {
+  constructor(scene: Phaser.Scene, areaSettings: FishingArea) {
     this.scene = scene;
+    this.areaSettings = areaSettings;
     this.mousePointer = scene.input.activePointer;
-    
-    // Set depth limit from area settings if provided
-    if (areaSettings) {
-      this.depthLimit = areaSettings.depthLimit;
-    }
     
     this.createGameObjects();
     this.setupInput();
@@ -294,9 +291,9 @@ export class HookManager {
 
     // Check if hook has reached the depth limit and auto-reel if so
     const currentDepth = this.hook.y - GAME_CONSTANTS.WATER_LEVEL;
-    const depthLimitInPixels = this.depthLimit * 10; // Convert meters to pixels (10:1 ratio)
+    const depthLimitInPixels = this.areaSettings.rockSettings.depthLimit * 10; // Convert meters to pixels (10:1 ratio)
     if (currentDepth >= depthLimitInPixels) {
-      console.log(`Hook reached depth limit of ${this.depthLimit}m (${depthLimitInPixels}px), auto-reeling...`);
+      console.log(`Hook reached depth limit of ${this.areaSettings.rockSettings.depthLimit}m (${depthLimitInPixels}px), auto-reeling...`);
       this.reelInHook();
     }
   }
@@ -324,6 +321,10 @@ export class HookManager {
   // Update bucket weight
   updateBucketWeight(weight: number): void {
     this.bucketWeight = weight;
+  }
+
+  updateAreaSettings(areaSettings: FishingArea): void {
+    this.areaSettings = areaSettings;
   }
 
   // Check if bucket is full
