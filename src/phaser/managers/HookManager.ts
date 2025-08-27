@@ -1,7 +1,7 @@
 // src/phaser/managers/HookManager.ts
 
 import Phaser from "phaser";
-import type { HookState } from "../types/GameTypes";
+import type { HookState, RockGenerationSettings } from "../types/GameTypes";
 import type { Fish } from "../entities/Fish";
 import { GAME_CONSTANTS } from "../config/GameConstants";
 
@@ -28,10 +28,17 @@ export class HookManager {
   private readonly MAX_VELOCITY_Y = 1500; // Max vertical speed (for upward movement)
   private readonly GRAVITY = 1200; // Constant downward force
   private readonly VERTICAL_INFLUENCE = 0.2; // How much mouse Y affects hook movement
+  private depthLimit: number = 100; // Default depth limit in meters
 
-  constructor(scene: Phaser.Scene) {
+  constructor(scene: Phaser.Scene, areaSettings?: RockGenerationSettings) {
     this.scene = scene;
     this.mousePointer = scene.input.activePointer;
+    
+    // Set depth limit from area settings if provided
+    if (areaSettings) {
+      this.depthLimit = areaSettings.depthLimit;
+    }
+    
     this.createGameObjects();
     this.setupInput();
   }
@@ -279,6 +286,14 @@ export class HookManager {
     if (this.hook.y < GAME_CONSTANTS.WATER_LEVEL + 10) {
       this.hook.y = GAME_CONSTANTS.WATER_LEVEL + 10;
       this.hookVelocityY = Math.max(0, this.hookVelocityY); // Remove upward velocity
+    }
+
+    // Check if hook has reached the depth limit and auto-reel if so
+    const currentDepth = this.hook.y - GAME_CONSTANTS.WATER_LEVEL;
+    const depthLimitInPixels = this.depthLimit * 10; // Convert meters to pixels (10:1 ratio)
+    if (currentDepth >= depthLimitInPixels) {
+      console.log(`Hook reached depth limit of ${this.depthLimit}m (${depthLimitInPixels}px), auto-reeling...`);
+      this.reelInHook();
     }
   }
 

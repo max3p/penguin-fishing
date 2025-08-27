@@ -31,7 +31,7 @@ export class WaterManager {
             this.scene.textures.remove('waterGradient')
         }
 
-        const gradientDepthPixels = this.settings.gradientDepth * 10
+        const gradientDepthPixels = this.settings.gradientDepth
         const gradientHeight = Math.max(8000, gradientDepthPixels + 2000)
 
         const canvas = this.scene.textures.createCanvas('waterGradient', 800, gradientHeight)

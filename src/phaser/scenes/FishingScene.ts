@@ -146,7 +146,7 @@ export default class FishingScene extends Phaser.Scene {
 
     this.waterManager = new WaterManager(this, settings);
     this.rockManager = new RockManager(this, settings);
-    this.hookManager = new HookManager(this);
+    this.hookManager = new HookManager(this, settings);
     this.fishManager = new FishManager(this, FishAreaSettings.SHALLOW_WATERS);
     this.fishManager.setHookManager(this.hookManager);
     this.uiManager = new UIManager(this);
