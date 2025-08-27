@@ -71,10 +71,15 @@ export class FishManager {
         const size = Phaser.Math.FloatBetween(species.minSize, species.maxSize)
         const speed = Phaser.Math.FloatBetween(species.minSpeed, species.maxSpeed)
 
-        // Add some variation to weight and value based on size
-        const sizeMultiplier = size / ((species.minSize + species.maxSize) / 2)
+        // Calculate weight dynamically based on size (simple formula: ~0.04 kg per pixel)
+        // This gives similar weight ranges to the previous hardcoded values
+        const baseWeightPerPixel = 0.04
         const weightVariation = Phaser.Math.FloatBetween(0.8, 1.2)
+        const actualWeight = size * baseWeightPerPixel * weightVariation
+
+        // Calculate value based on weight and species value per kg
         const valueVariation = Phaser.Math.FloatBetween(0.9, 1.1)
+        const actualValue = species.value * actualWeight * valueVariation
 
         const fishData: FishData = {
             id: `fish_${this.fishIdCounter++}`,
@@ -86,8 +91,8 @@ export class FishManager {
             speed: speed,
             direction: Math.random() > 0.5 ? 1 : -1,
             spawned: true,
-            actualWeight: species.weight * sizeMultiplier * weightVariation,
-            actualValue: species.value * sizeMultiplier * valueVariation
+            actualWeight: actualWeight,
+            actualValue: actualValue
         }
 
         // Create and store the fish
