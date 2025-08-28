@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef } from 'react'
 import { initGame } from '../phaser/main'
+import { GameStateDisplay } from './GameStateDisplay'
 
 const App = () => {
   const gameRef = useRef<Phaser.Game | null>(null)
@@ -42,6 +43,7 @@ const App = () => {
           border: '2px solid #333'
         }}
       />
+      <GameStateDisplay />
     </div>
   )
 }

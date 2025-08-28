@@ -1,5 +1,6 @@
 // src/phaser/scenes/VillageScene.ts - Enhanced version with menu UI and fishing results modal
 import Phaser from 'phaser'
+import { phaserReduxBridge } from '../../store/phaserBridge'
 
 interface MenuItem {
   name: string
@@ -15,21 +16,15 @@ interface CaughtFish {
   totalValue: number
 }
 
-interface GameData {
-  fishingResults?: {
-    fishCaught: number
-    totalValue: number
-    caughtFish: CaughtFish[]
-  }
-}
+
 
 export default class VillageScene extends Phaser.Scene {
   private goldText!: Phaser.GameObjects.Text
   private menuItems: MenuItem[] = []
   private menuButtons: Phaser.GameObjects.Container[] = []
-  private playerGold: number = 0
   private modalContainer: Phaser.GameObjects.Container | null = null
   private caughtFishData: CaughtFish[] = []
+  private unsubscribe: (() => void) | null = null
 
   constructor() {
     super('VillageScene')
@@ -59,8 +54,14 @@ export default class VillageScene extends Phaser.Scene {
     // Player stats (only gold)
     this.createPlayerStats()
     
+    // Subscribe to Redux store changes
+    this.subscribeToStore()
+    
     // Check if we're returning from fishing and show results modal
     this.checkForFishingResults()
+    
+    // Set current scene in Redux
+    phaserReduxBridge.setCurrentScene('VillageScene')
   }
 
   private createBackgroundPattern() {
@@ -86,8 +87,7 @@ export default class VillageScene extends Phaser.Scene {
         description: 'Buy upgrades',
         enabled: true,
         action: () => {
-          // Shop functionality will be implemented later
-          console.log('Shop clicked - functionality coming soon!')
+          this.scene.start('ShopScene')
         }
       },
       {
@@ -185,7 +185,8 @@ export default class VillageScene extends Phaser.Scene {
 
   private createPlayerStats() {
     // Gold display with better styling
-    this.goldText = this.add.text(50, 50, `Gold: ${Math.round(this.playerGold)}g`, {
+    const currentGold = phaserReduxBridge.getGold()
+    this.goldText = this.add.text(50, 50, `Gold: ${Math.round(currentGold)}g`, {
       fontSize: '20px',
       color: '#FFD700',
       backgroundColor: 'rgba(0, 0, 0, 0.8)',
@@ -200,19 +201,29 @@ export default class VillageScene extends Phaser.Scene {
     statsBg.setDepth(-1)
   }
 
+  private subscribeToStore() {
+    // Subscribe to Redux store changes to update gold display
+    this.unsubscribe = phaserReduxBridge.subscribe(() => {
+      // Only update if the scene is still active and the text object exists
+      if (this.scene.isActive() && this.goldText && this.goldText.active) {
+        const currentGold = phaserReduxBridge.getGold()
+        this.goldText.setText(`Gold: ${Math.round(currentGold)}g`)
+      }
+    })
+  }
+
   private checkForFishingResults() {
-    // Check if we have fishing results data from the previous scene
-    // We'll use a global game data approach instead
-    const gameData = (this.game as GameData).fishingResults
+    // Check if we have fishing results data from Redux store
+    const fishingResults = phaserReduxBridge.getFishingResults()
     
-    console.log('Checking for fishing results:', gameData)
+    console.log('Checking for fishing results from Redux:', fishingResults)
     
-    if (gameData && gameData.fishCaught > 0) {
-      this.caughtFishData = gameData.caughtFish || []
+    if (fishingResults && fishingResults.fishCaught > 0) {
+      this.caughtFishData = fishingResults.caughtFish || []
       this.showFishingResultsModal()
       
-      // Clear the data so it doesn't show again
-      delete (this.game as GameData).fishingResults
+      // Clear the data from Redux so it doesn't show again
+      phaserReduxBridge.clearFishingResults()
     }
   }
 
@@ -310,8 +321,7 @@ export default class VillageScene extends Phaser.Scene {
     
     continueBtn.on('pointerdown', () => {
       // Add the total value to player's gold
-      this.playerGold += totalValue
-      this.updateGoldDisplay()
+      phaserReduxBridge.addGold(totalValue)
       
       // Close modal
       this.closeFishingResultsModal()
@@ -333,12 +343,31 @@ export default class VillageScene extends Phaser.Scene {
   }
 
   private updateGoldDisplay() {
-    this.goldText.setText(`Gold: ${Math.round(this.playerGold)}g`)
+    const currentGold = phaserReduxBridge.getGold()
+    this.goldText.setText(`Gold: ${Math.round(currentGold)}g`)
   }
 
   // Method to set fishing results (called from FishingScene)
   setFishingResults(fishData: CaughtFish[]) {
     this.caughtFishData = fishData
     this.showFishingResultsModal()
+  }
+
+  // Cleanup when scene is destroyed
+  shutdown() {
+    if (this.unsubscribe) {
+      this.unsubscribe()
+      this.unsubscribe = null
+    }
+    // Cleanup the Redux bridge
+    phaserReduxBridge.cleanup()
+  }
+
+  // Also cleanup when scene is paused (scene transition)
+  pause() {
+    if (this.unsubscribe) {
+      this.unsubscribe()
+      this.unsubscribe = null
+    }
   }
 }

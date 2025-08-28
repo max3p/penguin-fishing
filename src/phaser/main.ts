@@ -3,6 +3,7 @@
 import Phaser from "phaser";
 import FishingScene from "./scenes/FishingScene";
 import VillageScene from "./scenes/VillageScene";
+import ShopScene from "./scenes/ShopScene";
 
 export const initGame = (): Phaser.Game => {
   const config: Phaser.Types.Core.GameConfig = {
@@ -10,7 +11,7 @@ export const initGame = (): Phaser.Game => {
     width: 800,
     height: 600,
     parent: "game-container",
-    scene: [VillageScene, FishingScene],
+    scene: [VillageScene, FishingScene, ShopScene],
     physics: {
       default: "arcade",
     },

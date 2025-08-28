@@ -11,6 +11,7 @@ import { FishManager } from "../managers/FishManager";
 import { FishAreaSettings } from "../config/FishSettings";
 import boatSpriteUrl from '../../assets/sprites/max-idle.png';
 import codSwimmingSpriteUrl from '../../assets/sprites/cod-swimming.png';
+import { phaserReduxBridge } from '../../store/phaserBridge';
 
 interface CaughtFish {
   species: string
@@ -106,15 +107,22 @@ export default class FishingScene extends Phaser.Scene {
   }
 
   private returnToVillage(): void {
-    // Pass fishing results data to the VillageScene via game data
+    // Pass fishing results data to Redux store
     if (this.caughtFish.length > 0) {
-      (this.game as any).fishingResults = {
+      phaserReduxBridge.setFishingResults({
         fishCaught: this.totalFishCaught,
         totalValue: this.totalValue,
         caughtFish: this.caughtFish
-      }
-      console.log('Passing fishing results:', (this.game as any).fishingResults)
+      })
+      console.log('Passing fishing results to Redux:', {
+        fishCaught: this.totalFishCaught,
+        totalValue: this.totalValue,
+        caughtFish: this.caughtFish
+      })
     }
+    
+    // Set current scene in Redux
+    phaserReduxBridge.setCurrentScene('VillageScene')
     
     this.scene.start('VillageScene')
   }
